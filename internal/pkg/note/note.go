@@ -11,6 +11,7 @@ import (
 
 const (
 	BucketName = "notes"
+	keyLength  = 6
 )
 
 type Note struct {
@@ -44,6 +45,9 @@ func (n *Note) Save(db *bolt.DB) (string, error) {
 	}
 
 	b := tx.Bucket([]byte(BucketName))
+	if v := b.Get(hash[:keyLength]); v == nil {
+		hash = hash[:keyLength]
+	}
 	if err := b.Put(hash, data); err != nil {
 		return "", err
 	}
@@ -62,16 +66,24 @@ func GetNote(db *bolt.DB, key string) (*Note, error) {
 		return nil, err
 	}
 
-	tx, err := db.Begin(false)
+	tx, err := db.Begin(true)
 	if err != nil {
 		return nil, err
 	}
+	defer tx.Rollback()
 
 	b := tx.Bucket([]byte(BucketName))
 	data := b.Get(rawKey)
 
 	var note Note
 	if err := json.Unmarshal(data, &note); err != nil {
+		return nil, err
+	}
+
+	if err := b.Delete(rawKey); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 	return &note, nil
