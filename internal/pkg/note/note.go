@@ -73,5 +73,5 @@ func GetNote(db *bolt.DB, key string) (*Note, error) {
 
 		return b.Delete(rawKey)
 	})
-	return &note, nil
+	return &note, err
 }
