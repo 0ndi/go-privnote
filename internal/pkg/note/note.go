@@ -32,32 +32,24 @@ func (n *Note) hash() []byte {
 //Save return note key witch used in url
 func (n *Note) Save(db *bolt.DB) (string, error) {
 	hash := n.hash()
-
-	tx, err := db.Begin(true)
-	if err != nil {
-		return "", err
-	}
-	defer tx.Rollback()
-
 	data, err := json.Marshal(n)
 	if err != nil {
 		return "", err
 	}
 
-	b := tx.Bucket([]byte(BucketName))
-	if v := b.Get(hash[:keyLength]); v == nil {
-		hash = hash[:keyLength]
-	}
-	if err := b.Put(hash, data); err != nil {
-		return "", err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return "", err
-	}
+	err = db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(BucketName))
+		if v := b.Get(hash[:keyLength]); v == nil {
+			hash = hash[:keyLength]
+		}
+		if err := b.Put(hash, data); err != nil {
+			return err
+		}
+		return nil
+	})
 
 	url := base64.URLEncoding.EncodeToString(hash)
-	return url, nil
+	return url, err
 }
 
 func GetNote(db *bolt.DB, key string) (*Note, error) {
@@ -66,25 +58,16 @@ func GetNote(db *bolt.DB, key string) (*Note, error) {
 		return nil, err
 	}
 
-	tx, err := db.Begin(true)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	b := tx.Bucket([]byte(BucketName))
-	data := b.Get(rawKey)
-
 	var note Note
-	if err := json.Unmarshal(data, &note); err != nil {
-		return nil, err
-	}
+	err = db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(BucketName))
+		data := b.Get(rawKey)
 
-	if err := b.Delete(rawKey); err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
+		if err := json.Unmarshal(data, &note); err != nil {
+			return err
+		}
+
+		return b.Delete(rawKey)
+	})
 	return &note, nil
 }
