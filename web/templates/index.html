@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Go-privNote</title>
+</head>
+<body>
+    <div>
+        <form method="post" action="/">
+            <textarea name="text"></textarea>
+            <input type="submit" value="Create note">
+        </form>
+    </div>
+{{if .Url}}
+    <div><p>{{.Url}}</p></div>
+{{end}}
+</body>
+</html>

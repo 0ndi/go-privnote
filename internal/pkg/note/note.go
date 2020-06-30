@@ -14,13 +14,17 @@ const (
 	keyLength  = 6
 )
 
+var (
+	defaultExpiration = time.Hour
+)
+
 type Note struct {
 	Data      string
 	ExpiredAt time.Time
 }
 
 func NewNote(data string) *Note {
-	return &Note{Data: data}
+	return &Note{Data: data, ExpiredAt: time.Now().Add(defaultExpiration)}
 }
 
 func (n *Note) hash() []byte {

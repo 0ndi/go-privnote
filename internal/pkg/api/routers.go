@@ -11,7 +11,7 @@ func NewRouter(db *bolt.DB) *mux.Router {
 	r.Use(loggingMiddleware)
 
 	ctrl := newController(db)
-	r.HandleFunc("/", ctrl.Index).Methods(http.MethodGet, http.MethodPost)
+	r.HandleFunc("/", ctrl.Home).Methods(http.MethodGet, http.MethodPost)
 	r.HandleFunc("/n/{note_id}", ctrl.GetNote).Methods(http.MethodGet)
 	return r
 }
