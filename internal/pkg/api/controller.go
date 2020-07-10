@@ -17,6 +17,7 @@ const (
 type HomeData struct {
 	Url   string
 	Error string
+	Data  string
 }
 
 type GetNoteData struct {
@@ -64,14 +65,24 @@ func (c *controller) GetNote(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	n, err := note.GetNote(c.db, vars["note_id"])
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
+		//w.WriteHeader(http.StatusNotFound)
 		log.Error(err)
-		return
+		//return
 	}
 
 	if n.Data == "" {
 		c.Home(w, r)
 		return
 	}
-	w.Write([]byte(n.Data))
+	t, err := template.New("index.html").ParseFiles("web/templates/index.html")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Error(err)
+		return
+	}
+
+	if err := t.Execute(w, HomeData{Data: n.Data}); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+	}
 }
