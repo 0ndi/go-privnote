@@ -5,10 +5,12 @@ import (
 )
 
 type config struct {
-	Addr            string `env:"SERVICE_HOST" envDefault:"0.0.0.0"`
-	Port            int    `env:"SERVICE_PORT" envDefault:"8080"`
-	ReadTimeout     int    `env:"TIMEOUT_SERVER_READ" envDefault:"60"`
-	WriteTimeout    int    `env:"TIMEOUT_SERVER_WRITE" envDefault:"60"`
+	Addr              string `env:"SERVICE_HOST" envDefault:"0.0.0.0"`
+	Port              int    `env:"SERVICE_PORT" envDefault:"8080"`
+	ReadTimeout       int    `env:"TIMEOUT_SERVER_READ" envDefault:"60"`
+	WriteTimeout      int    `env:"TIMEOUT_SERVER_WRITE" envDefault:"60"`
+	WaitUntilShutdown int    `env:"WAIT_UNTIL_SHUTDOWN" envDefault:"5"`
+	Host              string `env:"HOST" envDefault:"http://127.0.0.1"`
 }
 
 var Conf *config

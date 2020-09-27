@@ -3,15 +3,10 @@ package api
 import (
 	"fmt"
 	"github.com/0ndi/go-privnote/internal/pkg/note"
-	"github.com/boltdb/bolt"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"html/template"
 	"net/http"
-)
-
-const (
-	currentHost = "http://127.0.0.1:8080"
 )
 
 type HomeData struct {
@@ -25,12 +20,18 @@ type GetNoteData struct {
 	Error string
 }
 
-type controller struct {
-	db *bolt.DB
+type NoteStorage interface {
+	Save(n *note.Note) (string, error)
+	GetNote(key string) (*note.Note, error)
 }
 
-func newController(db *bolt.DB) *controller {
-	return &controller{db}
+type controller struct {
+	host    string
+	storage NoteStorage
+}
+
+func newController(storage NoteStorage, host string) *controller {
+	return &controller{host, storage}
 }
 
 func (c *controller) Home(w http.ResponseWriter, r *http.Request) {
@@ -38,14 +39,15 @@ func (c *controller) Home(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		r.ParseForm()
 		text := r.PostFormValue("text")
-
-		n := note.NewNote(text)
-		noteID, err := n.Save(c.db)
-		if err != nil {
-			log.Error(err)
-			data.Error = err.Error()
-		} else {
-			data.Url = fmt.Sprintf("%s/n/%s", currentHost, noteID)
+		if len(text) > 0 {
+			n := note.NewNote(text)
+			noteID, err := c.storage.Save(n)
+			if err != nil {
+				log.Error(err)
+				data.Error = err.Error()
+			} else {
+				data.Url = fmt.Sprintf("%s/n/%s", c.host, noteID)
+			}
 		}
 	}
 	t, err := template.New("index.html").ParseFiles("web/templates/index.html")
@@ -63,11 +65,9 @@ func (c *controller) Home(w http.ResponseWriter, r *http.Request) {
 
 func (c *controller) GetNote(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	n, err := note.GetNote(c.db, vars["note_id"])
+	n, err := c.storage.GetNote(vars["note_id"])
 	if err != nil {
-		//w.WriteHeader(http.StatusNotFound)
 		log.Error(err)
-		//return
 	}
 
 	if n.Data == "" {
